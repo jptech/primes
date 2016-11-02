@@ -3,7 +3,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-#define THREADS_PER_BLOCK (512)
+#define THREADS_PER_BLOCK (1024)
 #define NUM_BLOCKS (64)
 
 void usage()
@@ -14,19 +14,22 @@ void usage()
 
 __global__ void sum_primes( int *N, unsigned long long *sum )
 {
-	int i, j, notprime;
-	int maxj = 0;
-	int maxN = *N;
-	int index = threadIdx.x + blockIdx.x * blockDim.x;
+	unsigned int i, j, notprime;
+	unsigned int maxj = 0;
+	unsigned int maxN = *N;
+	unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
 	unsigned long long block_sum = 0;
 
 	__shared__ unsigned long long sums[THREADS_PER_BLOCK];
 
 	sums[threadIdx.x] = 0;
 
-	for(i = index; i < maxN; i += (blockDim.x * NUM_BLOCKS))
+	i = index;
+	if(i < 2) i += (blockDim.x * NUM_BLOCKS);
+
+	for(; i < maxN; i += (blockDim.x * NUM_BLOCKS))
 	{
-		notprime = (i > 1) ? 0 : 1;
+		notprime = 0;
 		maxj = sqrt( (double) i);
 		for(j = 2; j <= maxj; j++)
 		{
@@ -47,7 +50,6 @@ __global__ void sum_primes( int *N, unsigned long long *sum )
 		{
 			block_sum += sums[i];
 		}
-
 		atomicAdd(sum, block_sum);
 	}
 
@@ -94,7 +96,7 @@ int main(int argc, char **argv)
 
 	printf("N: %d\n", N);
 	printf("sum of primes up to N: %ld\n", sum);
-	printf("Elapsed time: %lf\n", t1 - t0);
+	printf("Time elapsed: %lf\n", t1 - t0);
 
 	cudaFree(n_cuda);
 	cudaFree(sum_cuda);

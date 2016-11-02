@@ -72,9 +72,10 @@ int main(int argc, char **argv)
 	t1 /= 1000000.0;
 	t1 += tv.tv_sec;
 
+	printf("Prime CPU ST\n");
 	printf("N: %d\n", N);
 	printf("sum of primes up to N: %ld\n", sum);
-	printf("Time elapsed: %lf\n", t1 - t0);
+	printf("Time elapsed: %lf\n\n", t1 - t0);
 
 	return 0;
 }

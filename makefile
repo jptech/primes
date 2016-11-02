@@ -1,6 +1,6 @@
 CC = gcc
 CUDACC = nvcc
-CFLAGS = -O3 -fomit-frame-pointer -funroll-loops -finline-functions
+CFLAGS = -O2 -Wall -fomit-frame-pointer -funroll-loops -finline-functions
 CUDAFLAGS = -O3 -Wno-deprecated-gpu-targets
 
 all: prime_cpu prime_cpu_mt prime_cuda
