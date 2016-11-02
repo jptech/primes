@@ -16,7 +16,9 @@ __global__ void sum_primes( int *N, unsigned long long *sum )
 	unsigned int i, j, notprime;
 	unsigned int maxj = 0;
 	unsigned int maxN = *N;
-	unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
+	//unsigned int index = threadIdx.x + blockIdx.x * blockDim.x * gridDim.x;
+    unsigned int index = ((blockIdx.x * gridDim.y + blockIdx.y) * THREADS_PER_BLOCK) + threadIdx.x;
+
 	unsigned long long block_sum = 0;
 
 	__shared__ unsigned long long sums[THREADS_PER_BLOCK];
@@ -58,6 +60,7 @@ int main(int argc, char **argv)
 	int N;
 	int num_threads, num_blocks;
 	int *n_cuda;
+	unsigned int blockx, blocky;
 	unsigned long long *sum_cuda;
 	unsigned long long sum;
 	struct timeval tv;
@@ -76,13 +79,16 @@ int main(int argc, char **argv)
 	num_blocks = ceil( (double) N / THREADS_PER_BLOCK);
 	num_threads = THREADS_PER_BLOCK;
 
-	dim3 blocks(num_blocks);
+	blockx = ceil( sqrt(num_blocks) );
+	blocky = ceil( sqrt(num_blocks) );
+
+	dim3 blocks(blockx, blocky);
 	dim3 threads(num_threads);
 
 	sum = 0;
 
 	printf("Prime CUDA\n");
-	printf("Blocks: %d tpb: %d\n", num_blocks, num_threads);
+	printf("Blocks: %d (x: %d y: %d) tpb: %d\n", num_blocks, blockx, blocky, num_threads);
 
 	cudaMalloc( (void **)&n_cuda, sizeof(int) );
 	cudaMalloc( (void **)&sum_cuda, sizeof(unsigned long long) );
