@@ -4,7 +4,6 @@
 #include <sys/time.h>
 
 #define THREADS_PER_BLOCK (1024)
-#define NUM_BLOCKS (64)
 
 void usage()
 {
@@ -25,23 +24,22 @@ __global__ void sum_primes( int *N, unsigned long long *sum )
 	sums[threadIdx.x] = 0;
 
 	i = index;
-	if(i < 2) i += (blockDim.x * NUM_BLOCKS);
+	if(i < 2 || i >= maxN) notprime = 1;
+	else notprime = 0;
 
-	for(; i < maxN; i += (blockDim.x * NUM_BLOCKS))
+	maxj = sqrt( (double) i);
+	for(j = 2; j <= maxj; j++)
 	{
-		notprime = 0;
-		maxj = sqrt( (double) i);
-		for(j = 2; j <= maxj; j++)
+		if(i % j == 0)
 		{
-			if(i % j == 0)
-			{
-				notprime = 1;
-				break;
-			}
+			notprime = 1;
+			break;
 		}
-		if(notprime == 0) sums[threadIdx.x] += i;
 	}
+	if(notprime == 0) sums[threadIdx.x] += i;
+	//if(notprime == 0) atomicAdd(sum, i);
 
+//*
 	__syncthreads();
 
 	if(threadIdx.x == 0)
@@ -52,7 +50,7 @@ __global__ void sum_primes( int *N, unsigned long long *sum )
 		}
 		atomicAdd(sum, block_sum);
 	}
-
+//*/
 }
 
 int main(int argc, char **argv)
@@ -75,9 +73,16 @@ int main(int argc, char **argv)
 	t0 /= 1000000.0;
 	t0 += tv.tv_sec;
 
-	num_blocks = NUM_BLOCKS;
+	num_blocks = ceil( (double) N / THREADS_PER_BLOCK);
 	num_threads = THREADS_PER_BLOCK;
+
+	dim3 blocks(num_blocks);
+	dim3 threads(num_threads);
+
 	sum = 0;
+
+	printf("Prime CUDA\n");
+	printf("Blocks: %d tpb: %d\n", num_blocks, num_threads);
 
 	cudaMalloc( (void **)&n_cuda, sizeof(int) );
 	cudaMalloc( (void **)&sum_cuda, sizeof(unsigned long long) );
@@ -85,7 +90,17 @@ int main(int argc, char **argv)
 	cudaMemcpy( n_cuda, (void *) &N, sizeof(int), cudaMemcpyHostToDevice );
 	cudaMemcpy( sum_cuda, (void *) &sum, sizeof(unsigned long long), cudaMemcpyHostToDevice );
 
-	sum_primes <<< num_blocks, num_threads >>> ( n_cuda, sum_cuda );
+	sum_primes <<< blocks, threads >>> ( n_cuda, sum_cuda );
+
+	cudaDeviceSynchronize();
+
+	cudaError_t error = cudaGetLastError();
+	if(error != cudaSuccess)
+	{
+		// print the CUDA error message and exit
+		printf("CUDA error: %s\n", cudaGetErrorString(error));
+		exit(-1);
+	}
 
 	cudaMemcpy( &sum, sum_cuda, sizeof(unsigned long long), cudaMemcpyDeviceToHost );
 
@@ -96,7 +111,7 @@ int main(int argc, char **argv)
 
 	printf("N: %d\n", N);
 	printf("sum of primes up to N: %ld\n", sum);
-	printf("Time elapsed: %lf\n", t1 - t0);
+	printf("Time elapsed: %lf\n\n", t1 - t0);
 
 	cudaFree(n_cuda);
 	cudaFree(sum_cuda);
