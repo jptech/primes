@@ -3,12 +3,15 @@
 #include <math.h>
 #include <sys/time.h>
 
+
+/* usage statement */
 void usage()
 {
 	printf("Usage: prime_cpu N\n");
 	exit(0);
 }
 
+/* returns 0 if N is prime */
 static inline int is_prime(int N)
 {
 	int i;
@@ -17,7 +20,8 @@ static inline int is_prime(int N)
 	max = sqrt(N);
 
 	if(N < 2) return -1;
-
+	
+	/* check if N is divisable by any number up to sqrt(N) */
 	for(i = 2; i <= max; i++)
 	{
 		if(N % i == 0)
@@ -27,6 +31,7 @@ static inline int is_prime(int N)
 	return 0;
 }
 
+/* returns a summation of every prime number up to N */
 long long sum_primes(int N)
 {
 	int i;
@@ -55,6 +60,7 @@ int main(int argc, char **argv)
 
 	N = atoi(argv[1]);
 
+	/* get a start time before the sum_primes call */
 	gettimeofday(&tv, NULL);
 	t0 = tv.tv_usec;
 	t0 /= 1000000.0;
@@ -62,6 +68,7 @@ int main(int argc, char **argv)
 
 	sum = sum_primes(N);
 
+	/* get an ending time after sum_primes returns */
 	gettimeofday(&tv, NULL);
 	t1 = tv.tv_usec;
 	t1 /= 1000000.0;
