@@ -4,6 +4,7 @@
 #include <sys/time.h>
 
 #define THREADS_PER_BLOCK (512)
+#define DEFAULT_SIZE (10000000)
 //#define NUM_BLOCKS (64)
 
 void usage()
@@ -12,9 +13,9 @@ void usage()
 	exit(0);
 }
 
-__global__ void sum_primes( unsigned int *N, unsigned long long *sum )
+__global__ void sum_primes( unsigned int *offset, unsigned int *N, unsigned long long *sum )
 {
-	unsigned int index = ((blockIdx.x * gridDim.y + blockIdx.y) * THREADS_PER_BLOCK) + threadIdx.x;
+	unsigned int index = (unsigned int) *offset + ((blockIdx.x * gridDim.y + blockIdx.y) * THREADS_PER_BLOCK) + threadIdx.x;
 	unsigned int i;
 	unsigned int j;
 	unsigned int max;
@@ -53,10 +54,13 @@ int main(int argc, char **argv)
 	unsigned int N;
 	unsigned int num_threads, num_blocks, blockx, blocky;
 	unsigned int *n_cuda;
+	unsigned int *off_cuda;
 	unsigned long long *sum_cuda;
 	unsigned long long sum;
 	struct timeval tv;
 	double t0, t1;
+
+	unsigned int subN, offset, size;
 
 	if(argc != 2)
 		usage();
@@ -68,36 +72,49 @@ int main(int argc, char **argv)
 	t0 /= 1000000.0;
 	t0 += tv.tv_sec;
 
-	num_blocks = ceil( (double) N / THREADS_PER_BLOCK);
-	num_threads = THREADS_PER_BLOCK;
-
-	blockx = ceil( sqrt(num_blocks) );
-	blocky = ceil( sqrt(num_blocks) );
-
-	dim3 blocks(blockx, blocky);
-	dim3 threads(num_threads);
-
-	sum = 0;
-
-	printf("Prime CUDA - alternate\n");
-	printf("Blocks: %d (x: %d y: %d) tpb: %d\n", num_blocks, blockx, blocky, num_threads);
-
 	cudaMalloc( (void **)&n_cuda, sizeof(unsigned int) );
+	cudaMalloc( (void **)&off_cuda, sizeof(unsigned int) );
 	cudaMalloc( (void **)&sum_cuda, sizeof(unsigned long long) );
 
-	cudaMemcpy( n_cuda, (void *) &N, sizeof(unsigned int), cudaMemcpyHostToDevice );
+	sum = 0;
 	cudaMemcpy( sum_cuda, (void *) &sum, sizeof(unsigned long long), cudaMemcpyHostToDevice );
 
-	sum_primes <<< blocks, threads >>> ( n_cuda, sum_cuda );
+	printf("Prime CUDA - alternate\n");
 
-	cudaDeviceSynchronize();
-
-	cudaError_t error = cudaGetLastError();
-	if(error != cudaSuccess)
+	for(offset = 0; offset < N; offset += DEFAULT_SIZE)
 	{
-		// print the CUDA error message and exit
-		printf("CUDA error: %s\n", cudaGetErrorString(error));
-		exit(-1);
+		if(offset + DEFAULT_SIZE < N) size = DEFAULT_SIZE;
+		else size = N - offset;
+
+		subN = offset + size;
+
+		num_blocks = ceil( (double) size / THREADS_PER_BLOCK );
+		num_threads = THREADS_PER_BLOCK;
+
+		blockx = ceil( sqrt(num_blocks) );
+		blocky = ceil( sqrt(num_blocks) );
+
+		dim3 blocks(blockx, blocky);
+		dim3 threads(num_threads);
+
+		printf("subN: %d offset: %d size: %d\n", subN, offset, size);
+		printf("Blocks: %d (x: %d y: %d) tpb: %d\n", num_blocks, blockx, blocky, num_threads);
+
+		cudaMemcpy( n_cuda, (void *) &subN, sizeof(unsigned int), cudaMemcpyHostToDevice );
+		cudaMemcpy( off_cuda, (void *) &offset, sizeof(unsigned int), cudaMemcpyHostToDevice );
+
+		sum_primes <<< blocks, threads >>> ( off_cuda, n_cuda, sum_cuda );
+
+		cudaDeviceSynchronize();
+
+		cudaError_t error = cudaGetLastError();
+		if(error != cudaSuccess)
+		{
+			// print the CUDA error message and exit
+			printf("CUDA error: %s\n", cudaGetErrorString(error));
+			exit(-1);
+		}
+
 	}
 
 	cudaMemcpy( &sum, sum_cuda, sizeof(unsigned long long), cudaMemcpyDeviceToHost );

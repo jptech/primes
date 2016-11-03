@@ -3,7 +3,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-#define THREADS_PER_BLOCK (1024)
+#define THREADS_PER_BLOCK (512)
 
 void usage()
 {
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 	t1 += tv.tv_sec;
 
 	printf("N: %d\n", N);
-	printf("sum of primes up to N: %ld\n", sum);
+	printf("sum of primes up to N: %lld\n", sum);
 	printf("Time elapsed: %lf\n\n", t1 - t0);
 
 	cudaFree(n_cuda);

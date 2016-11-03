@@ -36,12 +36,7 @@ long long sum_primes(int N)
 	{
 		if(is_prime(i) == 0)
 		{
-			//printf("PRIME: %d\n", i);
 			sum += i;
-		}
-		else
-		{
-			//printf("NOT PRIME: %d\n", i);
 		}
 	}
 
@@ -74,7 +69,7 @@ int main(int argc, char **argv)
 
 	printf("Prime CPU ST\n");
 	printf("N: %d\n", N);
-	printf("sum of primes up to N: %ld\n", sum);
+	printf("sum of primes up to N: %lld\n", sum);
 	printf("Time elapsed: %lf\n\n", t1 - t0);
 
 	return 0;

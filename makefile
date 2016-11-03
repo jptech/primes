@@ -1,12 +1,12 @@
 CC = gcc
 CUDACC = nvcc
 CFLAGS = -O2 -Wall -fomit-frame-pointer -funroll-loops -finline-functions
-CUDAFLAGS = -O3 -Wno-deprecated-gpu-targets
+CUDAFLAGS = -O2 -Wno-deprecated-gpu-targets
 
-all: prime_cpu prime_cpu_mt prime_cuda prime_cuda_new
+all: prime_cpu prime_cpu_mt prime_cuda prime_cuda_new prime_cuda_multi
 
 clean:
-	rm -rf *.o prime_cpu prime_cpu_mt prime_cuda prime_cuda_new
+	rm -rf *.o prime_cpu prime_cpu_mt prime_cuda prime_cuda_new prime_cuda_multi
 
 prime_cpu: prime_cpu.c
 	$(CC) $(CFLAGS) prime_cpu.c -o prime_cpu -lm
@@ -16,6 +16,9 @@ prime_cpu_mt: prime_cpu_mt.c
 
 prime_cuda: prime_cuda.cu
 	$(CUDACC) $(CUDAFLAGS) prime_cuda.cu -o prime_cuda -lm
+
+prime_cuda_multi: prime_cuda_multi.cu
+	$(CUDACC) $(CUDAFLAGS) prime_cuda_multi.cu -o prime_cuda_multi -lm
 
 prime_cuda_new: prime_cuda_new.cu
 	$(CUDACC) $(CUDAFLAGS) prime_cuda_new.cu -o prime_cuda_new -lm

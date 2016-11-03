@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
 	printf("Prime CPU MT\n");
 	printf("N: %d\n", N);
-	printf("sum of primes up to N: %ld\n", sum);
+	printf("sum of primes up to N: %lld\n", sum);
 	printf("Time elapsed: %lf\n\n", t1 - t0);
 
 	return 0;
