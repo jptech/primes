@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 #define THREADS_PER_BLOCK (512)
-#define DEFAULT_SIZE (128*128*THREADS_PER_BLOCK)
+#define DEFAULT_SIZE (160*160*THREADS_PER_BLOCK)
 
 /* usage statement */
 void usage()
@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 {
 	unsigned int N;
 	unsigned int num_threads, num_blocks, blockx, blocky;
+	unsigned int def_block_size, size_thresh;
 	unsigned int *n_cuda;
 	unsigned int *off_cuda;
 	unsigned long long *sum_cuda;
@@ -85,12 +86,21 @@ int main(int argc, char **argv)
 	sum = 0;
 	cudaMemcpy( sum_cuda, (void *) &sum, sizeof(unsigned long long), cudaMemcpyHostToDevice );
 
+	def_block_size = DEFAULT_SIZE;
+	size_thresh = 100000000;
+
 	printf("Prime CUDA\n");
 
-	for(offset = 0; offset < N; offset += DEFAULT_SIZE)
+	for(offset = 0; offset < N; offset += def_block_size)
 	{
+		if(offset >= size_thresh)
+		{
+			size_thresh *= 4;
+			def_block_size /= 2;
+		}
+
 		/* determine the subset of numbers to calculate for this CUDA kernel call */
-		if(offset + DEFAULT_SIZE < N) size = DEFAULT_SIZE;
+		if(offset + def_block_size < N) size = def_block_size;
 		else size = N - offset;
 
 		subN = offset + size;
