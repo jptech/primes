@@ -3,10 +3,13 @@ CUDACC = nvcc
 CFLAGS = -O2 -Wall -fomit-frame-pointer -funroll-loops -finline-functions
 CUDAFLAGS = -O2 -Wno-deprecated-gpu-targets
 
-all: prime_cpu prime_cpu_mt prime_cuda
+all: prime_cpu prime_cpu_mt prime_cuda prime_seive
 
 clean:
-	rm -rf *.o prime_cpu prime_cpu_mt prime_cuda
+	rm -rf *.o prime_cpu prime_cpu_mt prime_cuda prime_seive
+
+prime_seive: prime_seive.c
+	$(CC) $(CFLAGS) -fopenmp prime_seive.c -o prime_seive -lm
 
 prime_cpu: prime_cpu.c
 	$(CC) $(CFLAGS) prime_cpu.c -o prime_cpu -lm
